@@ -16,7 +16,7 @@ const DEMO_ITEMS: { id: DemoId; label: string }[] = [
 
 export const Header: FC<HeaderProps> = ({ activeDemo, onSelectDemo }) => {
   return (
-    <header className={styles.header}>
+    <header className={styles["site-header"]}>
       <div className={styles.container}>
         <div className={styles.title}>1px Rounding Demo</div>
         <nav className={styles.nav}>
@@ -26,7 +26,7 @@ export const Header: FC<HeaderProps> = ({ activeDemo, onSelectDemo }) => {
               <button
                 key={item.id}
                 type="button"
-                className={`${styles["nav-item"]} ${isActive ? styles.active : ""}`}
+                className={`${styles.item} ${isActive ? styles["-active"] : ""}`}
                 onClick={() => onSelectDemo(item.id)}
               >
                 {item.label}

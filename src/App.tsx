@@ -8,9 +8,9 @@ const App = () => {
   const [activeDemo, setActiveDemo] = useState<DemoId>("demo1");
 
   return (
-    <div className={styles["app-wrapper"]}>
+    <div className={styles["app-layout"]}>
       <Header activeDemo={activeDemo} onSelectDemo={setActiveDemo} />
-      <main className={styles["app-content"]}>
+      <main className={styles.content}>
         <ScrollContainer>
           <ScrollContents />
         </ScrollContainer>
