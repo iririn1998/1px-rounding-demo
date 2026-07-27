@@ -3,7 +3,7 @@ import { ScrollContents } from "./components/ScrollContents";
 
 const App = () => {
   return (
-    <div className={styles['app-content']}>
+    <div className={styles["app-content"]}>
       <ScrollContents />
     </div>
   );
