@@ -1,5 +1,5 @@
 .scroll-contents {
-  width: 400px;
+  width: 100%;
   height: 200px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
