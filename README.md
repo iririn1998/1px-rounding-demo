@@ -1,44 +1,86 @@
-# React + TypeScript + Vite
+# 1px Rounding Demo
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Webアプリケーションで発生する「1pxのずれ」を再現・観察するためのデモです。画面解像度とブラウザズームの組み合わせを切り替えると、3等分レイアウトの丸め誤差によって横スクロールバーが出たり消えたりする様子を確認できます。
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `oxlint.config.mts`:
-
-```ts
-import { defineConfig } from "oxlint";
-
-export default defineConfig({
-  plugins: ["react", "typescript", "oxc"],
-  options: {
-    typeAware: true,
-  },
-  rules: {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { allowConstantExport: true }],
-  },
-});
-```
-
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
-
-## Formatting with oxfmt
-
-To format your code or check formatting:
+## セットアップ
 
 ```bash
-pnpm run format        # Format files in-place
-pnpm run format:check  # Check formatting status
+pnpm install
+pnpm run dev
+```
+
+## デモの内容
+
+3列レイアウトを次の手順でシミュレートしています。
+
+1. `CSS viewport幅 = 画面解像度 ÷ (ズーム率 / 100)` を計算する(小数になることがある)
+2. `1列の幅 = viewport幅 ÷ 3` を計算し、整数pxに丸める
+3. 丸めた3列の合計幅と、丸めたviewport幅を比較する
+4. 合計がviewportを1px以上超えていれば「横スクロールあり」と表示する
+
+例: 解像度1366px・ズーム110%のとき、CSS viewport幅は約1241.82px。1列は413.94px → 丸めて414px。3列合計は1242pxとなり、条件によってviewportを1px超過します。ページ下部の「YOUR BROWSER」セクションでは、実際のブラウザの `innerWidth` / `devicePixelRatio` などをライブ表示します。
+
+## なぜ1pxずれるのか
+
+### CSSピクセルは物理ピクセルではない
+
+CSSの `px` は論理単位で、実際の描画は `devicePixelRatio`(DPR)を掛けた物理ピクセルで行われます。DPRが1.25や1.5(Windowsのスケーリング125%/150%など)の環境では、CSS上の整数pxが物理ピクセルの整数に対応せず、ブラウザはどこかで丸めを行わざるを得ません。
+
+### ズームで小数幅が生まれる
+
+ブラウザズームは実質的にDPRを変化させます。ズーム110%では `window.innerWidth` が小数を含む値になり、`100%` や `1/3` といった相対指定を整数の物理ピクセルへ変換する際に端数が発生します。
+
+### 丸めの合計は元の値と一致しない
+
+413.94pxの列を3つ並べる場合、各列を個別に414pxへ丸めると合計は1242pxとなり、元の1241.82pxより0.18px大きくなります。要素単位で丸める実装では、この誤差が親要素の幅を超えて1pxのはみ出しになります。逆に切り捨てられると、要素間に1pxの隙間(hairline gap)が生じます。
+
+### ブラウザごとに丸め戦略が違う
+
+- Chrome/Edge (Blink): 1/64px単位のLayoutUnitで計算し、描画時にピクセルへスナップする
+- Firefox (Gecko): アプリユニット(1/60px)で計算する
+- Safari (WebKit): 独自のピクセルスナップを行う
+
+同じCSSでも「どの段階で丸めるか」が異なるため、特定のブラウザ・特定のズーム率でだけ1pxずれる、という再現しづらいバグになります。
+
+## 典型的な症状
+
+- 意図しない横スクロールバーが特定のズーム率でだけ出る(このデモが再現するケース)
+- 隣接する要素の間に1pxの隙間や線が見える(背景色が透ける)
+- 1pxのborderが太く見えたり、消えたり、にじんだりする
+- 画像をタイル状に並べると継ぎ目に線が入る
+- `transform: scale()` した要素の境界がぼやける
+- `100vw` がスクロールバー幅を含むため、縦スクロールバーがあると横に十数pxあふれる(1pxずれとよく混同される別問題)
+
+## 対策
+
+### レイアウト設計で誤差を出さない
+
+- 幅を個別に計算して並べるのではなく、`flex: 1` やCSS Gridの `fr` 単位に分割を任せる。ブラウザが余りを内部で分配するため、合計が親を超えない
+- `width: 33.33%` を3つ並べるより `grid-template-columns: repeat(3, 1fr)` を使う
+- `box-sizing: border-box` を全体に適用し、border分の加算誤差をなくす
+
+### はみ出し・隙間への対処
+
+- ルート近くでの `overflow-x: hidden` は最後の手段。原因の特定を妨げるため、まず誤差の発生源を潰す
+- 隙間対策としての `margin: -1px` や幅の `+1px` は別環境で逆側にずれるため避ける
+- タイル画像の継ぎ目には、要素をわずかに重ねるか、1枚のスプライトにまとめる
+
+### 描画のにじみへの対処
+
+- アニメーションや `transform` の移動量は整数pxに丸める(`translate(10.5px, 0)` → `translate(11px, 0)`)
+- 高DPI環境の1px線には `transform: scaleY(0.5)` を使ったhairline手法や、`0.5px` 指定(対応ブラウザのみ)を検討する
+
+### 検証方法
+
+- ブラウザズームを90/110/125/150%に変えてスクロールバーの有無を見る(このデモの操作そのもの)
+- `window.devicePixelRatio` と `document.documentElement.scrollWidth > clientWidth` をコンソールで確認し、はみ出しを数値で捉える
+- `getBoundingClientRect()` は小数を返すため、レイアウト計算値と実描画のずれの調査に使える
+
+## 技術スタック
+
+React 19 + TypeScript + Vite。Lint/Formatは Oxlint / oxfmt を使用しています。
+
+```bash
+pnpm run format        # フォーマット
+pnpm run format:check  # フォーマット確認
 ```
