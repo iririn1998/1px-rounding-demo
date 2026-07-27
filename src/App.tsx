@@ -1,7 +1,10 @@
+import styles from "./App.module.css";
+import { ScrollContents } from "./components/ScrollContents";
+
 const App = () => {
   return (
-    <div>
-      <h1>1px Rounding Demo</h1>
+    <div className={styles['app-content']}>
+      <ScrollContents />
     </div>
   );
 };
