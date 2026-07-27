@@ -18,10 +18,7 @@ export const Header: FC<HeaderProps> = ({ activeDemo, onSelectDemo }) => {
   return (
     <header className={styles.header}>
       <div className={styles.container}>
-        <div className={styles.title}>
-          <span className={styles["logo-icon"]} />
-          <span className={styles["title-text"]}>1px Rounding Demo</span>
-        </div>
+        <div className={styles.title}>1px Rounding Demo</div>
         <nav className={styles.nav}>
           {DEMO_ITEMS.map((item) => {
             const isActive = activeDemo === item.id;
